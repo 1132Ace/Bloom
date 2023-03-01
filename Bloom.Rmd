@@ -1,0 +1,75 @@
+```{r}
+library(tidyverse)
+library(rnoaa)
+
+temp_dc <- ghcnd_search(stationid = "USC00186350",
+                     var = c("tmax", "tmin"),
+                     date_min = "1900-01-01",
+                     date_max = "2023-01-01")
+
+temp_k <- ghcnd_search(stationid = "JA000047759",
+                     var = c("tmax", "tmin"),
+                     date_min = "1900-01-01",
+                     date_max = "2023-01-01")
+
+temp_l <- ghcnd_search(stationid = "GME00127786",
+                     var = c("tmax", "tmin"),
+                     date_min = "1900-01-01",
+                     date_max = "2023-01-01")
+
+temp_v <- ghcnd_search(stationid = "CA001108395",
+                     var = c("tmax", "tmin"),
+                     date_min = "1900-01-01",
+                     date_max = "2023-01-01")
+
+
+temp_dc[["tmax"]][["tmax"]] <- temp_dc[["tmax"]][["tmax"]] - 273.15
+temp_dc <-
+  left_join(temp_dc$tmax, temp_dc$tmin, by = c("id", "date")) %>%
+  mutate(temp_dc = ((tmax-273.15) + (tmin-273.15)) / 20) %>%
+  select(date, tmax, temp_dc)
+
+temp_k[["tmax"]][["tmax"]] <- temp_k[["tmax"]][["tmax"]] - 273.15
+temp_k <-
+  left_join(temp_k$tmax, temp_k$tmin, by = c("id", "date")) %>%
+  mutate(temp_k = ((tmax-273.15) + (tmin-273.15)) / 20) %>%
+  select(date, tmax, temp_k)
+
+temp_l[["tmax"]][["tmax"]] <- temp_l[["tmax"]][["tmax"]] - 273.15
+temp_l <-
+  left_join(temp_l$tmax, temp_l$tmin, by = c("id", "date")) %>%
+  mutate(temp_l = ((tmax-273.15) + (tmin-273.15)) / 20) %>%
+  select(date, tmax, temp_l)
+
+temp_v[["tmax"]][["tmax"]] <- temp_v[["tmax"]][["tmax"]] - 273.15
+temp_v <-
+  left_join(temp_v$tmax, temp_v$tmin, by = c("id", "date")) %>%
+  mutate(temp_v = ((tmax-273.15) + (tmin-273.15)) / 20) %>%
+  select(date, tmax, temp_v)
+
+
+doy_last_frost <- function(tmax, doy_max = 100) {
+  dof <- which(tmax[1:doy_max] < 0)
+  if(length(dof) == 0) {1} else {max(dof) + 1}
+}
+
+doy_prediction <- function(temp, tmax)
+  doy_last_frost(tmax) + which.max(cumsum(pmax(temp[(doy_last_frost(tmax) + 1):365], 0, na.rm = TRUE)^2) > 4264)
+
+temp_dc %>%
+  summarize(date_dc = doy_prediction(temp_dc, tmax) + as.Date("2023-01-01")) %>%
+  pull(date_dc)
+
+temp_k %>%
+  summarize(date_k = doy_prediction(temp_k, tmax) + as.Date("2023-01-01")) %>%
+  pull(date_k)
+
+temp_l %>%
+  summarize(date_l = doy_prediction(temp_l, tmax) + as.Date("2023-01-01")) %>%
+  pull(date_l)
+
+temp_v %>%
+  summarize(date_v = doy_prediction(temp_v, tmax) + as.Date("2023-01-01")) %>%
+  pull(date_v)
+
+```
